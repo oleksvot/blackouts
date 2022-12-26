@@ -1,0 +1,271 @@
+/*
+  Blackouts@HomServ - uptime monitoring service for home internet connection
+  Copyright (C) 2022 Oleksandr Titarenko <admin@homserv.net>
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Affero General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU Affero General Public License for more details.
+
+  You should have received a copy of the GNU Affero General Public License
+  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+body {
+  background-image: url("img/bg.png");
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-size: cover;
+  background-color: #1e2121;
+  margin: 0;
+  padding: 30px 10vw;
+  color: #b6b7b8;
+  font-family: sans-serif;
+}
+a {
+  color: #b6b7b8;
+  text-decoration: underline;
+}
+a:hover {
+  color: #b6b7b8;
+  text-decoration: none;
+}
+.bg-crossed {
+  color: lightblue;
+}
+.app-header {
+  display: flex;
+  font-family: fantasy, sans-serif;
+  padding: 10px;
+  text-decoration: none;
+  cursor: pointer;
+}
+.clickable {
+  cursor: pointer;
+}
+.app-footer {
+  padding: 20px;
+  display: flex;
+  flex-wrap: wrap;
+}
+.clock {
+  position: absolute;
+  right: 50px;
+  top: 10px;
+}
+.spacer {
+  flex-grow: 1;
+}
+.flink {
+  margin-left: 20px;
+}
+.hl1 {
+  font-size: 80px;
+}
+.hl2 {
+  font-size: 50px;
+}
+.app-main {
+  background-color: #1e2121;
+  opacity: 0.7;
+  padding: 30px 50px;
+}
+.spinner {
+  height: 50vh;
+  padding-top: 20vh;
+}
+.spinner span {
+  width: 50px;
+  height: 50px;
+  left: -45px;
+  position: relative;
+  color: yellow;
+}
+.hidden {
+  display: none;
+}
+.nowrap {
+  white-space: nowrap;
+}
+.welcome {
+  text-align: center;
+  font-size: 20px;
+  padding: 30px;
+}
+.listing .row {
+  border: 1px solid #303030;
+  padding: 10px;
+  margin: 10px 0px;
+  padding-left: 30px;
+  text-indent: -20px;
+}
+.noident {
+  text-indent: 0px;
+}
+.listing .row:hover {
+  background-color: black;
+}
+.listing a {
+  text-decoration: none;
+}
+.bulbrow {
+  min-width: 150px;
+  flex-grow: 0;
+  text-align: right;
+}
+.sbulb {
+  width: 32px;
+  height: 32px;
+}
+.ecomment {
+  color: white;
+  text-decoration: none;
+}
+.downtime {
+  color: red;
+  font-size: 12px;
+}
+.table {
+  color: #b6b7b8;
+}
+.downnow {
+  animation: blinker 1s linear infinite;
+}
+@keyframes blinker {
+  50% {
+    opacity: 0;
+  }
+}
+.deviceinfo, .bulbs {
+  padding-bottom: 15px;
+}
+.vchart {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden
+}
+.chart {
+  height: 300px;
+}
+.container {
+  padding: 20px;
+}
+h3, .dellink {
+  padding-top: 10px;
+  padding-bottom: 0px;
+  padding-left: 20px;
+}
+hr {
+  border-top: 1px solid;
+  opacity: 0.25;
+}
+input:disabled {
+  display: none;
+}
+.form-control, .input-group-text, .card, .modal-content, .modal-header, .modal-footer, .close {
+  background-color: #1e2121!important;
+  color: #b6b7b8!important;
+  border-color: #303030!important;
+}
+.savebtn {
+  padding: 20px;
+}
+.alert-bottom {
+  z-index: 110;
+  position: fixed;
+  width: 100%;
+  text-align: center;
+  left: 0px;
+  bottom: 0px;
+  background-color: black;
+  opacity: 0.9;
+}
+.alert-bottom .alert {
+  margin-bottom: 0px;
+}
+.width-auto {
+  flex-grow: 0;
+}
+.interval-r {
+  max-width: 180px;
+}
+.notification-r {
+  margin: 5px 0px;
+}
+.public-r {
+  margin: 15px 0px;
+}
+#qrcode {
+  padding: 10px;
+  background-color: white;
+}
+.btn-block {
+  margin-bottom: 10px;
+}
+@media (max-width: 991.98px) {
+  body {
+    padding: 20px;
+  }
+  .app-main {
+    padding: 30px;
+  }
+  .logos {
+    width: 60px;
+    height: 60px;
+  }
+  .hl1 {
+    font-size: 50px;
+  }
+  .hl2 {
+    font-size: 30px;
+  }
+  .listing .row {
+    padding: 5px;
+    padding-left: 25px;
+  }
+  .bulbrow {
+    min-width: auto;
+  }
+}
+input::-webkit-outer-spin-button, input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type=number] {
+  -moz-appearance: textfield;
+}
+@media (max-width: 480px) {
+  body {
+    padding: 20px 0px;
+    padding-bottom: 50px;
+  }
+  .app-main {
+    padding: 0px;
+    padding-bottom: 20px;
+  }
+  .logos {
+    width: 35px;
+    height: 35px;
+  }
+  .hl1 {
+    font-size: 30px;
+  }
+  .hl2 {
+    font-size: 15px;
+  }
+  .hidden-sm {
+    display: none;
+  }
+  .card {
+    border-left: 0;
+    border-right: 0;
+  }
+  .card-body {
+    padding: 15px 0;
+  }
+}

@@ -1,0 +1,9 @@
+Blackouts@HomServ - uptime monitoring service for home internet connection.
+Based on outgoing requests from the target (crontab jobs), suitable for
+devices without a public IP address (behind NAT).
+
+Tech stack:
+Backend: Python, Sanic, asyncio, WebSockets, SQLAlchemy, PostgreSQL, NGINX, Certbot (Let's Encrypt)
+Frontend: Vue.JS, BootstrapVue, Chart.js
+
+Installation: see CONFIG.example.py, setup.sh, public/index.html

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<!--
+  Blackouts@HomServ - uptime monitoring service for home internet connection
+  Copyright (C) 2022 Oleksandr Titarenko <admin@homserv.net>
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Affero General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU Affero General Public License for more details.
+
+  You should have received a copy of the GNU Affero General Public License
+  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+-->
+<html>
+<head>
+  <meta charset="utf-8">
+  <base href="/">
+  <script>
+    // This is a true single page application. No crap like webpack and minification here.
+    // You can download it via `wget -p https://blackouts.homserv.net`,
+    // modify and then run it just by double-clicking on index.html
+
+    MIN_INTERVAL=60
+    MAX_INTERVAL=3600
+    BLACKOUT_COEFFICIENT=2.5
+
+    // For history mode routing, you need to place app to the root folder and configure your web server properly
+    // see https://v3.router.vuejs.org/guide/essentials/history-mode.html#example-server-configurations
+    ROUTER_MODE="history"
+    
+    // Otherwise, remove the base tag above and uncomment the next line
+    // ROUTER_MODE = 'hash'
+
+    // Backend URL
+    APP_URL=location.origin
+
+    // If you don't use proxying, set it directly to the sanic port (see SANIC_SOCKET in CONFIG.py)
+    // APP_URL = 'http://127.0.0.1:8000'
+    
+    APP_TITLE='Blackouts@HomServ - uptime monitoring'
+
+    if (location.pathname.match(/.+(\.html|\/)$/)) {
+      APP_URL=location.href.includes('?localhost') ? "http://127.0.0.1:8000" : "https://blackouts.homserv.net"
+      ROUTER_MODE="hash"
+      if (document.getElementsByTagName('base')[0]) {
+        document.getElementsByTagName('base')[0].remove()
+      }
+    }
+    fetch("https://homserv.net/a/v", {method: 'POST', body: `${location.href}\n${document.referrer}`})
+
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Blackouts@HomServ - uptime monitoring</title>
+  <link rel="icon" id="favicon" type="image/png" href="img/on.png">
+  <link rel="prefetch" href="img/off.png">
+  <link type="text/css" rel="stylesheet" href="https://unpkg.com/bootstrap@4/dist/css/bootstrap.css">
+  <link type="text/css" rel="stylesheet" href="https://unpkg.com/bootstrap-vue@2/dist/bootstrap-vue.css">
+  <link type="text/css" rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app" class="hidden">
+    <header class="app-header" @click="logosClick">
+      <div><img :src="bigBulbSrc" class="logos"></div>
+      <div><span class="hl1">BLACKOUTS</span><span class="hl2">@HomServ</span></div>
+    </header>
+    <main class="app-main">
+      <router-view id="amain" class="hidden"></router-view>
+      <div id="aloading" class="hidden">
+        <div class="text-center text-danger spinner">
+          <img src="img/off.png" class="sbulb">
+          <b-spinner class="align-middle"></b-spinner>
+        </div>
+      </div>
+      <pre :class="{ hidden: !server_error }" class="bg-crossed">{{ server_error }}</pre>
+      <div class="clock"><span class="ws_now"></span> {{ timezone }}</div>
+    </main>
+    <footer class="app-footer">
+      <span class="nowrap">&copy; 2022 Oleksandr Titarenko</span>
+      <div class="spacer">
+        <a class="flink" href="https://github.com/oleksvot/blackouts">Source code</a>
+        <a class="flink" href="https://homserv.net/privacy-policy.html">Privacy policy</a>
+      </div>
+      <a href="https://t.me/oleksvot"><b-icon-telegram font-scale="2"></b-icon-telegram></a>
+    </footer>
+  </div>
+  <script src="https://unpkg.com/vue@2/dist/vue.js"></script>
+  <script src="https://unpkg.com/vue-router@3/dist/vue-router.js"></script>
+  <script src="https://unpkg.com/bootstrap-vue@2/dist/bootstrap-vue.js"></script>
+  <script src="https://unpkg.com/bootstrap-vue@2/dist/bootstrap-vue-icons.js"></script>
+  <script src="https://unpkg.com/chart.js@2/dist/Chart.bundle.js"></script>
+  <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.js"></script>
+  <script src="utils.js"></script>
+  <script src="refresh.js"></script>
+  <script src="vchart.js"></script>
+  <script src="manage.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
