@@ -1,3 +1,7 @@
+# Main config file
+# Rename this file to CONFIG.py
+
+
 # SECTION A
 # These variables are used in setup.sh and blackouts.py, you need to run setup.sh atfer editing this section
 
