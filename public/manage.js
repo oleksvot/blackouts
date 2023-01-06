@@ -73,7 +73,14 @@ function prepare_device() {
       this.device_cached.events = this.device.events.sort((x,y) => {
         return x.id - y.id
       })
+      for (var n = this.device_cached.events.length - 1; n >= 0; n --) {
+        if (this.device_cached.events[n].downtime || n == 0) {
+          this.device_cached.ended = this.device_cached.events[n].ended
+          break
+        }
+      }
     }
+    this.device.ended = this.device_cached.ended
     // Event on server side is added when device comes back online
     // So we add it here for currently offline devices
     // Event without id is displayed in a special way in the table
@@ -134,16 +141,9 @@ const deviceMixin = {
       return formatSeconds(this.timed)
     },
     alivetime() {
-      var ended = null
-      for (var n = this.device.events.length - 1; n >= 0; n --) {
-        if (this.device.events[n].downtime || n == 0) {
-          ended = this.device.events[n].ended
-          break
-        }
-      }
-      if (ended) {
+      if (this.device.ended) {
         return formatSeconds((new Date(this.device.updated) - 
-          new Date(ended)) / 1000)
+          new Date(this.device.ended)) / 1000)
       } else {
         return ''
       }      
