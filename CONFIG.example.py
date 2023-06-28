@@ -50,7 +50,7 @@ SQLALCHEMY_URL="postgresql+asyncpg:///blackouts?host=/var/run/postgresql"
 
 # We dont't need crap like Same-origin policy is this app
 # This allows you to place the frontend anywhere, even on the local file system
-ALLOW_ORIGIN = "*"
+ALLOW_ORIGIN="*"
 
 # Min value for update interval and notify down interval
 MIN_INTERVAL=60
