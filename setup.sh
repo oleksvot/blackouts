@@ -161,7 +161,7 @@ fi
 source env/bin/activate
 
 # Install/Upgrade packages inside virtual env
-pip3 install sanic sanic-ext SQLAlchemy psycopg2-binary asyncpg aiosmtplib python-geoip-python3 python-geoip-geolite2
+pip install -r requirements.txt
 
 # Generate systemd unit
 cat <<EOF | sudo tee /etc/systemd/system/$APPNAME.service
