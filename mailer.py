@@ -32,6 +32,14 @@ async def send_message(email, subject, content):
 	message["Subject"] = subject
 	message.add_header('Content-Type', 'text/html')
 	message.set_payload(content)
+	
+	if email.endswith('@example.com'):
+		from json import dumps
+		import time
+		open('example_email.log', 'a').write(dumps({'timestamp': time.time(), 'from': message["From"], 'to': message["To"], 
+					 'subject': message["Subject"], 'content': content})+'\n')
+		return
+	
 	await send_smtp(message)
 
 def footer(email, edit_token):
