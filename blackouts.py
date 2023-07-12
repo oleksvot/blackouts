@@ -192,7 +192,7 @@ async def listing(request):
         columns = ('id', 'title', 'isp', 'location', 'created', 'updated', 'downtime', 'downtime_uncrossed', 'interval')
         devices = (await orm.execute(select(Device).filter_by(public=True).order_by(Device.downtime))).scalars()
         return json({'devices': [ { k: device.__dict__[k] for k in columns } for device in devices ], 
-            'total': (await orm.execute(select([func.count()]).select_from(Device))).scalar_one()
+            'total': (await orm.execute(select(func.count()).select_from(Device))).scalar_one()
             }, default=json_serial)
 
 async def mask_ip(ip):
@@ -455,7 +455,7 @@ async def create_device(request):
     async with async_orm() as orm:
         now = datetime.utcnow()
         yesterday = now - timedelta(days=1)
-        if (await orm.execute(select([func.count()]).select_from(Device).where(
+        if (await orm.execute(select(func.count()).select_from(Device).where(
             Device.ip == request.remote_addr, Device.created > yesterday))).scalar_one() > REG_PER_IP:
             return json({'blocked': True})
 

@@ -43,12 +43,12 @@ DBNAME="blackouts"
 
 # By default, use a database named blackouts on the local postgresql server
 # Connect via unix socket, auth with ident protocol (without password)
-SQLALCHEMY_URL="postgresql+asyncpg:///blackouts?host=/var/run/postgresql"
+SQLALCHEMY_URL="postgresql+asyncpg:///blackouts"
 # Tables will be created automatically on first run
 # The string form of the URL is dialect[+driver]://user:password@host/dbname[?key=value..]
-#SQLALCHEMY_URL="postgresql://ubuntu:password@localhost/blackouts"
+#SQLALCHEMY_URL="postgresql+asyncpg://ubuntu:password@localhost/blackouts"
 
-# We dont't need crap like Same-origin policy is this app
+# We don't need crap like Same-origin policy is this app
 # This allows you to place the frontend anywhere, even on the local file system
 ALLOW_ORIGIN="*"
 
