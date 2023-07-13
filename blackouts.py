@@ -154,10 +154,10 @@ async def alerts_down():
     '''
     async with dba() as orm:
         now = datetime.utcnow()
-        rs = await orm.execute(select(Device).filter_by(notifyoff=True, email_confirmed=True, notified_down=False).where(
+        rs = await orm.scalars(select(Device).filter_by(notifyoff=True, email_confirmed=True, notified_down=False).where(
             Device.updated < now - timedelta(seconds=MIN_INTERVAL),
             Device.updated > now - timedelta(seconds=MAX_INTERVAL + MIN_INTERVAL * 2)))
-        for device in rs.scalars():
+        for device in rs:
             try:
                 if device.updated < now - timedelta(seconds=device.notify_interval):
                     asyncio.create_task(mailer.device_down(device.email, device.title, device.edit_token))
@@ -190,9 +190,9 @@ async def listing(request):
     '''
     async with dba() as orm:
         columns = ('id', 'title', 'isp', 'location', 'created', 'updated', 'downtime', 'downtime_uncrossed', 'interval')
-        devices = (await orm.execute(select(Device).filter_by(public=True).order_by(Device.downtime))).scalars()
+        devices = await orm.scalars(select(Device).filter_by(public=True).order_by(Device.downtime))
         return json({'devices': [ { k: device.__dict__[k] for k in columns } for device in devices ], 
-            'total': (await orm.execute(select(func.count()).select_from(Device))).scalar_one()
+            'total': await orm.scalar(select(func.count()).select_from(Device))
             }, default=json_serial)
 
 async def mask_ip(ip):
@@ -203,7 +203,7 @@ async def mask_ip(ip):
 
     async with dba() as orm:
         ip_int = int(IPv4Address(ip))
-        ip_info = (await orm.execute(select(IPs).filter(IPs.a <= ip_int, IPs.b >= ip_int))).scalars().first()
+        ip_info = await orm.scalar(select(IPs).filter(IPs.a <= ip_int, IPs.b >= ip_int))
         ipc = ip.split('.')
         ipc[3] = '*'
         try:
@@ -222,7 +222,7 @@ async def get_device_js(device, columns):
     '''
     async with dba() as orm:
         js = { k: await mask_ip(device.__dict__[k]) if k == 'ip' else device.__dict__[k] for k in columns }
-        events = (await orm.execute(select(Event).filter_by(device_id=device.id))).scalars()
+        events = await orm.scalars(select(Event).filter_by(device_id=device.id))
         ecolumns = ('id', 'started', 'ended', 'downtime', 'old_ip', 'new_ip', 'comment', 'crossed')
         js['events'] = []
         for event in events:
@@ -235,13 +235,12 @@ async def device_view(request, token):
     /u/v/<view_token or id for public devices> - device info and events list
     '''
     async with dba() as orm:
-        try:
-            device = (await orm.execute(select(Device).filter_by(view_token=token))).scalar_one()
-        except:
-            try:
-                device = (await orm.execute(select(Device).filter_by(id=int(token)).filter_by(public=True))).scalar_one()
-            except:
-                return json({'error': 'bad token'})
+        device = await orm.scalar(select(Device).filter_by(view_token=token))
+        if not device and token.isdigit():
+            device = await orm.scalar(select(Device).filter_by(id=int(token)).filter_by(public=True))
+
+        if not device:
+            return json({'error': 'bad token'})
         
         columns = ('id', 'title', 'notes', 'country', 'location', 'isp', 'battery', 'reserve', 
             'battery_comment', 'reserve_comment', 'interval', 'created', 'ip', 'updated', 'downtime', 'downtime_uncrossed', 'version')
@@ -254,9 +253,8 @@ async def device_edit(request, token):
     /u/e/<edit_token> - device info for admin and events list
     '''
     async with dba() as orm:
-        try:
-            device = (await orm.execute(select(Device).filter_by(edit_token=token))).scalar_one()
-        except:
+        device = await orm.scalar(select(Device).filter_by(edit_token=token))
+        if not device:
             return json({'error': 'bad token'})
         
         columns = ('id', 'title', 'notes', 'country', 'location', 'isp', 'battery', 'reserve', 'battery_comment', 
@@ -271,9 +269,8 @@ async def device_save(request, token):
     Saves editable fields to device table. If email changed, marks it as unconfirmed
     '''
     async with dba() as orm:
-        try:
-            device = (await orm.execute(select(Device).filter_by(edit_token=token))).scalar_one()
-        except:
+        device = await orm.scalar(select(Device).filter_by(edit_token=token))
+        if not device:
             return json({'error': 'bad token'})
 
         editable_columns = ['title', 'notes', 'location', 'isp', 'battery', 'reserve', 
@@ -304,9 +301,8 @@ async def email_send_code(request, token):
     Saves email to device table and sends verification code. post - email
     '''
     async with dba() as orm:
-        try:
-            device = (await orm.execute(select(Device).filter_by(edit_token=token))).scalar_one()
-        except:
+        device = await orm.scalar(select(Device).filter_by(edit_token=token))
+        if not device:
             return json({'error': 'bad token'})
 
         rj = request.json
@@ -339,9 +335,8 @@ async def verify_email(request, token):
     Checks email verification code, sets email_confirmed. post - vcode
     '''
     async with dba() as orm:
-        try:
-            device = (await orm.execute(select(Device).filter_by(edit_token=token))).scalar_one()
-        except:
+        device = await orm.scalar(select(Device).filter_by(edit_token=token))
+        if not device:
             return json({'error': 'bad token'})
 
         rj = request.json
@@ -368,7 +363,7 @@ async def set_token(device, tok):
         if tok not in ('edit', 'view', 'update'): raise NameError('Incorrect tok')
         tok = tok + '_token'
         val = random_str()
-        if (await orm.execute(select(Device).filter(getattr(Device, tok) == val))).scalars().first():
+        if await orm.scalar(select(Device).filter(getattr(Device, tok) == val)):
             raise ValueError('Collision')
 
         setattr(device, tok, val)
@@ -380,9 +375,8 @@ async def change_token(request, token):
     Generates token and saves it to device table. post - tok
     '''
     async with dba() as orm:
-        try:
-            device = (await orm.execute(select(Device).filter_by(edit_token=token))).scalar_one()
-        except:
+        device = await orm.scalar(select(Device).filter_by(edit_token=token))
+        if not device:
             return json({'error': 'bad token'})
 
         rj = request.json
@@ -398,9 +392,8 @@ async def unsubscribe(request, token):
     Unsubscribe email
     '''
     async with dba() as orm:
-        try:
-            device = (await orm.execute(select(Device).filter_by(edit_token=token))).scalar_one()
-        except:
+        device = await orm.scalar(select(Device).filter_by(edit_token=token))
+        if not device:
             return json({'error': 'bad token'})
 
         device.email = ''
@@ -415,13 +408,12 @@ async def toogle_event(request, token):
     Toogle event crossed state and update downtime_uncrossed. post - id
     '''
     async with dba() as orm:
-        try:
-            device = (await orm.execute(select(Device).filter_by(edit_token=token))).scalar_one()
-        except:
+        device = await orm.scalar(select(Device).filter_by(edit_token=token))
+        if not device:
             return json({'error': 'bad token'})
 
         rj = request.json
-        event = (await orm.execute(select(Event).filter_by(id=int(rj['id'])).filter_by(device_id=device.id))).scalar_one()
+        event = await orm.scalar(select(Event).filter_by(id=int(rj['id'])).filter_by(device_id=device.id))
         event.crossed = not event.crossed
         device.downtime_uncrossed += event.downtime * (-1 if event.crossed else 1)
         notify_device(device)
@@ -434,13 +426,12 @@ async def add_comment(request, token):
     Add comment to event. post - id, comment
     '''
     async with dba() as orm:
-        try:
-            device = (await orm.execute(select(Device).filter_by(edit_token=token))).scalar_one()
-        except:
+        device = await orm.scalar(select(Device).filter_by(edit_token=token))
+        if not device:
             return json({'error': 'bad token'})
 
         rj = request.json
-        event = (await orm.execute(select(Event).filter_by(id=int(rj['id'])).filter_by(device_id=device.id))).scalar_one()
+        event = await orm.scalar(select(Event).filter_by(id=int(rj['id'])).filter_by(device_id=device.id))
         event.comment = rj['comment']
         notify_device(device)
         device.version += 1 
@@ -455,8 +446,8 @@ async def create_device(request):
     async with dba() as orm:
         now = datetime.utcnow()
         yesterday = now - timedelta(days=1)
-        if (await orm.execute(select(func.count()).select_from(Device).where(
-            Device.ip == request.remote_addr, Device.created > yesterday))).scalar_one() > REG_PER_IP:
+        if await orm.scalar(select(func.count()).select_from(Device).where(
+            Device.ip == request.remote_addr, Device.created > yesterday)) > REG_PER_IP:
             return json({'blocked': True})
 
         device = Device()
@@ -474,14 +465,14 @@ async def create_device(request):
 
         if device.ip:
             ip_int = int(IPv4Address(device.ip))
-            ip_info = (await orm.execute(select(IPs).filter(IPs.a <= ip_int, IPs.b >= ip_int))).scalars().first()
+            ip_info = await orm.scalar(select(IPs).filter(IPs.a <= ip_int, IPs.b >= ip_int))
             if ip_info:
                 device.isp = ip_info.isp
                 device.location = ip_info.location + ' ' + device.country
 
         orm.add(device)
         await orm.commit()
-        device = (await orm.execute(select(Device).filter_by(edit_token=token))).scalar_one()
+        device = await orm.scalar(select(Device).filter_by(edit_token=token))
         device.title = 'Device ' + str(device.id)
         await orm.commit()
         return json({'ok': True, 'new_token': token})
@@ -493,9 +484,8 @@ async def delete_device(request, token):
     Deletes events from database and marks device as deleted
     '''
     async with dba() as orm:
-        try:
-            device = (await orm.execute(select(Device).filter_by(edit_token=token))).scalar_one()
-        except:
+        device = await orm.scalar(select(Device).filter_by(edit_token=token))
+        if not device:
             return json({'error': 'bad token'})
 
         
@@ -631,9 +621,8 @@ async def update(request, token):
     /u/<update_token> - Handles alive messages from users devices. 
     '''
     async with dba() as orm:
-        try:
-            device = (await orm.execute(select(Device).filter_by(update_token=token))).scalar_one()
-        except:
+        device = await orm.scalar(select(Device).filter_by(update_token=token))
+        if not device:
             return text('bad token')
 
         now = datetime.utcnow()
@@ -709,7 +698,7 @@ async def add_ip(ip, isp, location):
         print(ip0, ip1)
         ip_int = [ int(IPv4Address(a)) for a in (ip0, ip1) ]
 
-        ip_info = (await orm.execute(select(IPs).filter(IPs.a == ip_int[0], IPs.b == ip_int[1]))).scalars().first()
+        ip_info = await orm.scalar(select(IPs).filter(IPs.a == ip_int[0], IPs.b == ip_int[1]))
         if not ip_info:
             ip_info = IPs()
             ip_info.a = ip_int[0]
