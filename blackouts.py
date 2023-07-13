@@ -46,7 +46,7 @@ Extend(app)
 
 engine = create_async_engine(SQLALCHEMY_URL)
 Base = declarative_base()
-async_orm = sessionmaker(engine, class_=AsyncSession)
+dba = sessionmaker(engine, class_=AsyncSession)
 
 class Device(Base):
     __tablename__ = "device"
@@ -152,7 +152,7 @@ async def alerts_down():
     '''
     Email down devices
     '''
-    async with async_orm() as orm:
+    async with dba() as orm:
         now = datetime.utcnow()
         rs = await orm.execute(select(Device).filter_by(notifyoff=True, email_confirmed=True, notified_down=False).where(
             Device.updated < now - timedelta(seconds=MIN_INTERVAL),
@@ -188,7 +188,7 @@ async def listing(request):
     '''
     /u/listing - public device listing for main page
     '''
-    async with async_orm() as orm:
+    async with dba() as orm:
         columns = ('id', 'title', 'isp', 'location', 'created', 'updated', 'downtime', 'downtime_uncrossed', 'interval')
         devices = (await orm.execute(select(Device).filter_by(public=True).order_by(Device.downtime))).scalars()
         return json({'devices': [ { k: device.__dict__[k] for k in columns } for device in devices ], 
@@ -201,7 +201,7 @@ async def mask_ip(ip):
     '''
     if not ip: return None
 
-    async with async_orm() as orm:
+    async with dba() as orm:
         ip_int = int(IPv4Address(ip))
         ip_info = (await orm.execute(select(IPs).filter(IPs.a <= ip_int, IPs.b >= ip_int))).scalars().first()
         ipc = ip.split('.')
@@ -220,7 +220,7 @@ async def get_device_js(device, columns):
     '''
     Prepare response for edit and view pages
     '''
-    async with async_orm() as orm:
+    async with dba() as orm:
         js = { k: await mask_ip(device.__dict__[k]) if k == 'ip' else device.__dict__[k] for k in columns }
         events = (await orm.execute(select(Event).filter_by(device_id=device.id))).scalars()
         ecolumns = ('id', 'started', 'ended', 'downtime', 'old_ip', 'new_ip', 'comment', 'crossed')
@@ -234,7 +234,7 @@ async def device_view(request, token):
     '''
     /u/v/<view_token or id for public devices> - device info and events list
     '''
-    async with async_orm() as orm:
+    async with dba() as orm:
         try:
             device = (await orm.execute(select(Device).filter_by(view_token=token))).scalar_one()
         except:
@@ -253,7 +253,7 @@ async def device_edit(request, token):
     '''
     /u/e/<edit_token> - device info for admin and events list
     '''
-    async with async_orm() as orm:
+    async with dba() as orm:
         try:
             device = (await orm.execute(select(Device).filter_by(edit_token=token))).scalar_one()
         except:
@@ -270,7 +270,7 @@ async def device_save(request, token):
     '''
     Saves editable fields to device table. If email changed, marks it as unconfirmed
     '''
-    async with async_orm() as orm:
+    async with dba() as orm:
         try:
             device = (await orm.execute(select(Device).filter_by(edit_token=token))).scalar_one()
         except:
@@ -303,7 +303,7 @@ async def email_send_code(request, token):
     '''
     Saves email to device table and sends verification code. post - email
     '''
-    async with async_orm() as orm:
+    async with dba() as orm:
         try:
             device = (await orm.execute(select(Device).filter_by(edit_token=token))).scalar_one()
         except:
@@ -338,7 +338,7 @@ async def verify_email(request, token):
     '''
     Checks email verification code, sets email_confirmed. post - vcode
     '''
-    async with async_orm() as orm:
+    async with dba() as orm:
         try:
             device = (await orm.execute(select(Device).filter_by(edit_token=token))).scalar_one()
         except:
@@ -364,7 +364,7 @@ async def set_token(device, tok):
     '''
     Generates token and saves it to device object. tok - ('edit', 'view', 'update')
     '''
-    async with async_orm() as orm:
+    async with dba() as orm:
         if tok not in ('edit', 'view', 'update'): raise NameError('Incorrect tok')
         tok = tok + '_token'
         val = random_str()
@@ -379,7 +379,7 @@ async def change_token(request, token):
     '''
     Generates token and saves it to device table. post - tok
     '''
-    async with async_orm() as orm:
+    async with dba() as orm:
         try:
             device = (await orm.execute(select(Device).filter_by(edit_token=token))).scalar_one()
         except:
@@ -397,7 +397,7 @@ async def unsubscribe(request, token):
     '''
     Unsubscribe email
     '''
-    async with async_orm() as orm:
+    async with dba() as orm:
         try:
             device = (await orm.execute(select(Device).filter_by(edit_token=token))).scalar_one()
         except:
@@ -414,7 +414,7 @@ async def toogle_event(request, token):
     '''
     Toogle event crossed state and update downtime_uncrossed. post - id
     '''
-    async with async_orm() as orm:
+    async with dba() as orm:
         try:
             device = (await orm.execute(select(Device).filter_by(edit_token=token))).scalar_one()
         except:
@@ -433,7 +433,7 @@ async def add_comment(request, token):
     '''
     Add comment to event. post - id, comment
     '''
-    async with async_orm() as orm:
+    async with dba() as orm:
         try:
             device = (await orm.execute(select(Device).filter_by(edit_token=token))).scalar_one()
         except:
@@ -452,7 +452,7 @@ async def create_device(request):
     '''
     Create new device
     '''
-    async with async_orm() as orm:
+    async with dba() as orm:
         now = datetime.utcnow()
         yesterday = now - timedelta(days=1)
         if (await orm.execute(select(func.count()).select_from(Device).where(
@@ -492,7 +492,7 @@ async def delete_device(request, token):
     '''
     Deletes events from database and marks device as deleted
     '''
-    async with async_orm() as orm:
+    async with dba() as orm:
         try:
             device = (await orm.execute(select(Device).filter_by(edit_token=token))).scalar_one()
         except:
@@ -630,7 +630,7 @@ async def update(request, token):
     '''
     /u/<update_token> - Handles alive messages from users devices. 
     '''
-    async with async_orm() as orm:
+    async with dba() as orm:
         try:
             device = (await orm.execute(select(Device).filter_by(update_token=token))).scalar_one()
         except:
@@ -700,7 +700,7 @@ async def update(request, token):
         return text(ret, headers={'Refresh': str(interval)})
 
 async def add_ip(ip, isp, location):
-    async with async_orm() as orm:
+    async with dba() as orm:
         ipc = ip.split('.')
         ipc[3] = '0'
         ip0 = '.'.join(ipc)
