@@ -190,7 +190,7 @@ async def listing(request):
     '''
     async with dba() as orm:
         columns = ('id', 'title', 'isp', 'location', 'created', 'updated', 'downtime', 'downtime_uncrossed', 'interval')
-        devices = await orm.scalars(select(Device).filter_by(public=True).order_by(Device.downtime))
+        devices = await orm.scalars(select(Device).filter_by(public=True).order_by(Device.id))
         return json({'devices': [ { k: device.__dict__[k] for k in columns } for device in devices ], 
             'total': await orm.scalar(select(func.count()).select_from(Device))
             }, default=json_serial)

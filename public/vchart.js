@@ -71,6 +71,15 @@ Vue.component('downtime-chart', {
       var downtimes_texts = []
       while (current <= now) {
         var tomorrow = new Date(+current + 86400000)
+        // DST sucks
+        if (tomorrow.getHours() == 23) {
+          tomorrow = new Date(+tomorrow + 3600000)
+          console.log(tomorrow, 'DST end')
+        }
+        if (tomorrow.getHours() == 1) {
+          tomorrow = new Date(+tomorrow - 3600000)
+          console.log(tomorrow, 'DST start')
+        }
         var downtime = 0
         var downtime_excluded = 0
         var ranges = []
