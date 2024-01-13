@@ -31,7 +31,7 @@ async def send_message(email, subject, content):
 	message["To"] = email
 	message["Subject"] = subject
 	message.add_header('Content-Type', 'text/html')
-	message.set_payload(content)
+	message.set_payload(content, 'utf-8')
 	
 	if email.endswith('@example.com'):
 		from json import dumps
