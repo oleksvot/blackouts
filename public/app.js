@@ -160,7 +160,6 @@ router.afterEach((to, from) => {
   try {
     app.bigBulb = true
     document.title = APP_TITLE
-    fetch("https://homserv.net/a/v", {method: 'POST', body: `${location.href}\n${document.referrer}`})
   } catch {
 
   }
